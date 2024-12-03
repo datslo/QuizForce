@@ -295,7 +295,7 @@ Case, Knowledge, and Case Notes
 An AI Specialist implements Einstein Sales Emails for a sales team. The team wants to send personalized follow-up emails to leads based on their interactions and data stored in Salesforce. The AI Specialist needs to configure the system to use the most accurate and up-to-date information for email generation. Which grounding technique should the AI Specialist use?
 Ground with Apex Merge Fields
 *Ground with Record Merge Fields
-Automatic grounding using Draft with Einstein feature Universal Containers (UC) wants to enable its sales team with automatic post-call visibility into mention of competitors, products, and other custom phrases.
+Automatic grounding using Draft with Einstein feature
 
 Universal Containers (UC) wants to enable its sales team with automatic post-call visibility into mention of competitors, products, and other custom phrases. Which feature should the AI Specialist set up to enable UC's sales team?
 Call Summaries
