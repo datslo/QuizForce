@@ -100,7 +100,7 @@ def question():
             
         if action == 'submit':
             # Process answer
-            user_answer = request.form.get('answer', '').upper()
+            user_answers = request.form.get('answer', '').upper().split(',')
             current_q = state['question_data'][state['current_question']]
             
             # Get the current answers (either shuffled or original)
@@ -113,15 +113,21 @@ def question():
                 current_answers = state['shuffled_answers'][str(state['current_question'])]
             
             try:
-                if user_answer.isdigit():
-                    answer_index = int(user_answer) - 1
-                else:
-                    answer_index = ord(user_answer) - ord('A')
+                # Convert all answers to indices
+                answer_indices = set()
+                for ans in user_answers:
+                    if ans.isdigit():
+                        answer_indices.add(int(ans) - 1)
+                    else:
+                        answer_indices.add(ord(ans) - ord('A'))
                 
-                # Check if answer is correct using the current answer arrangement
-                is_correct = current_answers[answer_index]['correct']
+                # Get correct answer indices
+                correct_indices = {i for i, ans in enumerate(current_answers) if ans['correct']}
                 
-                # If this is a new answer or changed answer
+                # Check if answer is correct (all correct answers selected and no incorrect ones)
+                is_correct = answer_indices == correct_indices
+                
+                # Update score
                 old_answer = state['answered_questions'][state['current_question']]
                 if old_answer is not None and old_answer != is_correct:
                     if old_answer:  # If the old answer was correct
@@ -137,8 +143,6 @@ def question():
                     if is_correct:
                         flash("That's right!", 'success')
                     else:
-                        # Get correct answers from current arrangement
-                        correct_indices = [i for i, ans in enumerate(current_answers) if ans['correct']]
                         correct_letters = [string.ascii_uppercase[i] for i in correct_indices]
                         flash(f"Incorrect. The correct answer was: {', '.join(correct_letters)}", 'error')
                     

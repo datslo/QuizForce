@@ -25,12 +25,17 @@
         {% endwith %}
         
         <div class="question">
-            <h2>{{ question }}</h2>
+            <div class="question-text">
+                {% set sentences = question.replace('. ', '.|').replace('? ', '?|').split('|') %}
+                {% for sentence in sentences %}
+                    {{ sentence }}{% if not loop.last %}<br>{% endif %}
+                {% endfor %}
+            </div>
             
             <form id="answer-form" action="{{ url_for('question') }}" method="post">
                 <div class="answers">
                     {% for answer in answers %}
-                    <div class="answer {% if answer.selected %}selected{% endif %}" onclick="selectAnswer('{{ answer.label }}')">
+                    <div class="answer {% if answer.selected %}selected{% endif %}" onclick="toggleAnswer('{{ answer.label }}')">
                         <label>
                             <span class="answer-label">{{ answer.label }})</span>
                             {{ answer.text }}
@@ -40,11 +45,10 @@
                 </div>
                 
                 <div class="input-area">
-                    <input type="text" id="answer-input" name="answer" placeholder="Enter answer (A-Z or 1-9)" required>
-                    <button type="submit">Submit</button>
+                    <input type="hidden" id="answer-input" name="answer" required>
+                    <input type="hidden" name="action" id="action-input" value="next">
+                    <button type="button" onclick="submitAnswers()" class="submit-button">Submit</button>
                 </div>
-
-                <input type="hidden" name="action" id="action-input" value="next">
             </form>
 
             <div class="navigation-controls">
@@ -66,11 +70,70 @@
     </div>
 
     <script>
-        function selectAnswer(label) {
-            document.getElementById('answer-input').value = label;
+        let selectedAnswers = new Set();
+        let lastIncorrectAnswer = null;
+
+        function toggleAnswer(label) {
+            const answerDiv = document.querySelector(`.answer:nth-child(${parseInt(label.charCodeAt(0) - 64)})`);
+            
+            // Clear any previous incorrect styling
+            document.querySelectorAll('.answer').forEach(div => {
+                div.classList.remove('incorrect');
+            });
+
+            // Clear any previous selections
+            document.querySelectorAll('.answer').forEach(div => {
+                div.classList.remove('selected');
+            });
+            selectedAnswers.clear();
+
+            // Add new selection
+            selectedAnswers.add(label);
+            answerDiv.classList.add('selected');
+        }
+
+        function submitAnswers() {
+            if (selectedAnswers.size === 0) {
+                alert('Please select at least one answer');
+                return;
+            }
+            
+            document.getElementById('answer-input').value = Array.from(selectedAnswers).join(',');
             document.getElementById('action-input').value = 'submit';
+            
+            // Store the currently selected answer div for potential incorrect styling
+            const selectedLabel = Array.from(selectedAnswers)[0];
+            const selectedDiv = document.querySelector(`.answer:nth-child(${parseInt(selectedLabel.charCodeAt(0) - 64)})`);
+            
+            // If the answer is wrong, mark it as incorrect and clear selection
+            if ("{{ get_flashed_messages(category_filter=['error'])|length > 0 }}" === "True") {
+                selectedDiv.classList.remove('selected');
+                selectedDiv.classList.add('incorrect');
+                selectedAnswers.clear();
+            }
+            
             document.getElementById('answer-form').submit();
         }
+
+        // Handle incorrect answers after page load
+        window.onload = function() {
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    {% if category == 'error' %}
+                        // Clear all selections
+                        document.querySelectorAll('.answer').forEach(div => {
+                            div.classList.remove('selected');
+                        });
+                        selectedAnswers.clear();
+                        
+                        // If there was a previous incorrect answer, mark it
+                        if (lastIncorrectAnswer) {
+                            lastIncorrectAnswer.classList.add('incorrect');
+                        }
+                    {% endif %}
+                {% endfor %}
+            {% endwith %}
+        };
 
         function navigate(direction) {
             document.getElementById('action-input').value = direction;
@@ -80,23 +143,6 @@
         function finishQuiz() {
             window.location.href = "{{ url_for('results') }}";
         }
-
-        // Add hover effect to answers
-        document.querySelectorAll('.answer').forEach(answer => {
-            answer.style.cursor = 'pointer';
-            
-            answer.addEventListener('mouseover', function() {
-                if (!this.classList.contains('selected')) {
-                    this.style.backgroundColor = '#f8f9fa';
-                }
-            });
-            
-            answer.addEventListener('mouseout', function() {
-                if (!this.classList.contains('selected')) {
-                    this.style.backgroundColor = '';
-                }
-            });
-        });
     </script>
 </body>
 </html> 
